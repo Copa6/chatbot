@@ -105,6 +105,17 @@ def build_model(num_features, num_targets):
     return model
 
 
+def train_model_and_save(X, y, model_name="chatbot_model.h5"):
+    print("build model")
+    model = build_model(num_features=len(X[0]), num_targets=len(y[0]))
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
+    hist = model.fit(np.array(X), np.array(y), epochs=200, batch_size=5, verbose=1)
+    model_file = os.path.join(models_dir, model_name)
+    model.save(model_file, hist)
+
+
 if __name__ == "__main__":
     print("Training the bot")
 
@@ -125,10 +136,4 @@ if __name__ == "__main__":
     X, y = build_data_for_training(documents, words, classes, encoding="binary")
     print(f"Training data has {len(X)} observations, and {len(X[0])} features")
 
-    print("build model")
-    model = build_model(num_features=len(X[0]), num_targets=len(y[0]))
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
-
-    hist = model.fit(np.array(X), np.array(y), epochs=200, batch_size=5, verbose=1)
-    model.save('chatbot_model.h5', hist)
+    train_model_and_save(X, y)

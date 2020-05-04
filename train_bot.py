@@ -12,6 +12,9 @@ from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from nltk import corpus
 
+import numpy as np
+import tensorflow
+
 
 working_dir = os.getcwd()
 data_dir = os.path.join(working_dir, "data")
@@ -60,6 +63,39 @@ def extract_data_from_intents(intents):
     return list(all_words), list(all_classes), all_documents
 
 
+def build_data_for_training(documents, words, classes, encoding="binary", shuffle=True):
+    train_data = []
+    if encoding == "binary":
+        for doc in documents:
+            data, target = doc
+            row = [int(w in data) for w in words]
+            target_multilabel = [0] * len(classes)
+            target_multilabel[classes.index(target)] = 1
+            train_data.append([row, target_multilabel])
+    else:
+        print(f"Encoding {encoding} not supported for training data!")
+
+    if shuffle:
+        random.shuffle(train_data)
+        training = np.array(train_data)
+        # create train and test lists. X - patterns, Y - intents
+    train_x = list(training[:, 0])
+    train_y = list(training[:, 1])
+
+    return train_x, train_y
+
+
+def build_model(num_features):
+    ip = Input((num_features,), dtype=tf.int32)
+    x = Dense(32, activation="relu")(ip)
+    x = Dropout(0.2)(x)
+    x = BatchNormalization()(x)
+
+    x = Dense(8, activation="relu")(x)
+    x = Dropout(0.2)(x)
+    x = BatchNormalization()(x)
+
+
 if __name__ == "__main__":
     print("Training the bot")
 
@@ -75,3 +111,8 @@ if __name__ == "__main__":
 
     save_file(words, "words.h5")
     save_file(classes, "classes.h5")
+
+    print("build training data")
+    X, y = build_data_for_training(documents, words, classes, encoding="binary")
+    print(f"Training data has {len(X)} observations, and {len(X[0])} features")
+

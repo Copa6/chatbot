@@ -5,6 +5,8 @@ import random
 import json
 from joblib import dump
 import nltk
+from keras.optimizers import SGD
+
 nltk.download('punkt', quiet=True)
 nltk.download('wordnet', quiet=True)
 
@@ -13,7 +15,9 @@ from nltk.tokenize import word_tokenize
 from nltk import corpus
 
 import numpy as np
-import tensorflow
+import tensorflow as tf
+from keras.models import Model, Input
+from keras.layers import Dense, Dropout, BatchNormalization
 
 
 working_dir = os.getcwd()
@@ -85,15 +89,20 @@ def build_data_for_training(documents, words, classes, encoding="binary", shuffl
     return train_x, train_y
 
 
-def build_model(num_features):
-    ip = Input((num_features,), dtype=tf.int32)
-    x = Dense(32, activation="relu")(ip)
-    x = Dropout(0.2)(x)
+def build_model(num_features, num_targets):
+    ip = Input((num_features,))
+    x = Dense(128, activation="relu")(ip)
+    x = Dropout(0.5)(x)
     x = BatchNormalization()(x)
 
-    x = Dense(8, activation="relu")(x)
-    x = Dropout(0.2)(x)
+    x = Dense(64, activation="relu")(x)
+    x = Dropout(0.5)(x)
     x = BatchNormalization()(x)
+
+    out = Dense(num_targets, activation="softmax")(x)
+
+    model = Model(inputs=ip, outputs=out)
+    return model
 
 
 if __name__ == "__main__":
@@ -116,3 +125,10 @@ if __name__ == "__main__":
     X, y = build_data_for_training(documents, words, classes, encoding="binary")
     print(f"Training data has {len(X)} observations, and {len(X[0])} features")
 
+    print("build model")
+    model = build_model(num_features=len(X[0]), num_targets=len(y[0]))
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
+    hist = model.fit(np.array(X), np.array(y), epochs=200, batch_size=5, verbose=1)
+    model.save('chatbot_model.h5', hist)

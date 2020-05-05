@@ -45,7 +45,7 @@ def preprocess_doc_and_extract_words(document):
     words_list = []
     for word in twords:
         word = lemmatizer.lemmatize(word.lower())
-        if (word not in string.punctuation) and (word not in stopwords):
+        if word not in string.punctuation:
             words_list.append(word)
 
     return words_list
@@ -67,7 +67,7 @@ def extract_data_from_intents(intents):
     return list(all_words), list(all_classes), all_documents
 
 
-def build_data_for_training(documents, words, classes, encoding="binary", shuffle=True):
+def build_data_for_training(documents, words, classes, encoding="binary", shuffle=True, training=True):
     train_data = []
     if encoding == "binary":
         for doc in documents:
@@ -77,7 +77,7 @@ def build_data_for_training(documents, words, classes, encoding="binary", shuffl
             target_multilabel[classes.index(target)] = 1
             train_data.append([row, target_multilabel])
     else:
-        print(f"Encoding {encoding} not supported for training data!")
+        raise Exception(f"Encoding {encoding} not supported for training data!")
 
     if shuffle:
         random.shuffle(train_data)
